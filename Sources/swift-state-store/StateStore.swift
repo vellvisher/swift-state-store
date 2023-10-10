@@ -6,7 +6,7 @@ import Logging
 public protocol StateProtocol {
   init()
   func serialized() throws -> Data
-  init(serializedData: Data) throws
+  init(from serializedData: Data) throws
 }
 
 /// StateStore generalised on a particular State value.
