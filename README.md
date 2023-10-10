@@ -28,7 +28,7 @@ To use this with an existing protobuf, add the following extension to your state
 
 ```swift
 extension $ProtoState: StateProtocol {
-  init(serializedData: Data) throws {
+  init(from serializedData: Data) throws {
     self = try AppState(serializedData: serializedData)
   }
 
