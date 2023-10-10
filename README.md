@@ -22,7 +22,7 @@ struct ContentView: View {
 ```
 
 
-### ProtoBuff integration
+### Protobuf integration
 
 To use this with an existing protobuf, add the following extension to your state object.
 
