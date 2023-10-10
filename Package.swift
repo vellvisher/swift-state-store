@@ -5,7 +5,6 @@ import PackageDescription
 
 let package = Package(
   name: "swift-state-store",
-  version: "1.0.1",
   platforms: [
     // Add iOS, watchOS, and macOS versions
     .iOS(.v15),
