@@ -4,17 +4,17 @@ import Logging
 protocol StateProtocol {
   init()
   init(with: String) throws
-  func serializedData() -> Data
+  func textFormatString() -> String
 }
 
-actor AppStore<State: StateProtocol>: ObservableObject {
+actor StateStore<State: StateProtocol>: ObservableObject {
   @MainActor @Published private(set) var state: State = .init()
 
   let storeFilename: URL
   let inMemory: Bool
 
   init(inMemory: Bool = false) {
-    storeFilename = URL.getFileInDocumentsDirectory("store.binpb")
+    storeFilename = URL.getFileInDocumentsDirectory("store.proto")
 
     if let uiTesting = ProcessInfo.processInfo.environment["UITesting"],
       uiTesting == "true"
@@ -69,6 +69,18 @@ actor AppStore<State: StateProtocol>: ObservableObject {
 
 extension Logger {
   fileprivate init() {
-    self.init(label: "AppStore")
+    self.init(label: "StateStore")
+  }
+}
+
+extension URL {
+  fileprivate static func getFileInDocumentsDirectory(_ filename: String) -> URL {
+    if #available(watchOS 9.0, *), #available(iOS 16.0, *), #available(macOS 13.0, *) {
+      return URL.documentsDirectory.appendingPathComponent(filename)
+    }
+
+    let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
+    let documentsDirectory = paths[0]
+    return documentsDirectory.appendingPathComponent(filename)
   }
 }
