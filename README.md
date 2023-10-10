@@ -27,7 +27,7 @@ struct ContentView: View {
 To use this with an existing protobuf, add the following extension to your state object.
 
 ```swift
-extension $ProtoState: StateProtocol {
+extension AppState: StateProtocol {
   init(from serializedData: Data) throws {
     self = try AppState(serializedData: serializedData)
   }
