@@ -36,8 +36,8 @@ public actor StateStore<State: StateProtocol>: ObservableObject {
     }
     if FileManager.default.fileExists(atPath: storeURL.path) {
       do {
-        let contents = try Data(contentsOf: storeURL)
-        let persistedState = try State(serializedData: contents)
+        let serializedData = try Data(contentsOf: storeURL)
+        let persistedState = try State(from: serializedData)
         await update { _ in
           return persistedState
         }
