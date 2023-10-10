@@ -1,38 +1,40 @@
 import Foundation
 import Logging
 
-protocol StateProtocol {
+public protocol StateProtocol {
   init()
   init(with: String) throws
   func textFormatString() -> String
 }
 
-actor StateStore<State: StateProtocol>: ObservableObject {
-  @MainActor @Published private(set) var state: State = .init()
+public actor StateStore<State: StateProtocol>: ObservableObject {
+  @MainActor @Published private(set) public var state: State = .init()
 
-  let storeFilename: URL
-  let inMemory: Bool
+  private let storeFile: URL?
+  private let inMemory: Bool
 
-  init(inMemory: Bool = false) {
-    storeFilename = URL.getFileInDocumentsDirectory("store.proto")
-
-    if let uiTesting = ProcessInfo.processInfo.environment["UITesting"],
-      uiTesting == "true"
-    {
-      self.inMemory = true
+  public init(filename: String?) {
+    if let filename = filename {
+      storeFile = URL.getFileInDocumentsDirectory(filename)
+      inMemory = false
     } else {
-      self.inMemory = inMemory
+      storeFile = nil
+      inMemory = true
     }
 
-    if !self.inMemory {
+    if !inMemory {
       Task { await loadState() }
     }
   }
 
-  func loadState() async {
-    if FileManager.default.fileExists(atPath: storeFilename.path) {
+  private func loadState() async {
+    guard let storeFile = storeFile else {
+      Logger().error("Must specify storeFile to load state from")
+      return
+    }
+    if FileManager.default.fileExists(atPath: storeFile.path) {
       do {
-        let contents = try String(contentsOfFile: storeFilename.path)
+        let contents = try String(contentsOfFile: storeFile.path)
         let persistedState = try State(with: contents)
         await update { _ in
           return persistedState
@@ -43,7 +45,7 @@ actor StateStore<State: StateProtocol>: ObservableObject {
     }
   }
 
-  func update(action: (State) -> State) async {
+  public func update(action: (State) -> State) async {
     await MainActor.run {
       Logger().info("Mutating old state: \(state)")
       state = action(state)
@@ -57,9 +59,13 @@ actor StateStore<State: StateProtocol>: ObservableObject {
     }
   }
 
-  func writeToFile(_ state: String) async {
+  private func writeToFile(_ state: String) async {
+    guard let storeFile else {
+      Logger().error("Store filename not specified for writing state")
+      return
+    }
     do {
-      try state.write(to: storeFilename, atomically: true, encoding: String.Encoding.utf8)
+      try state.write(to: storeFile, atomically: true, encoding: String.Encoding.utf8)
     } catch let error {
       // failed to write file – bad permissions, bad filename, missing permissions, or more likely it can't be converted to the encoding
       Logger().error("Error writing: \(error)")
