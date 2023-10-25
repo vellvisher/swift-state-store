@@ -35,10 +35,8 @@ final class StateStoreTest: XCTestCase {
   func testUpdateNextRollNumber() async throws {
     XCTAssertEqual(store.state.nextRollNumber, 1)
     XCTAssert(store.state.students.isEmpty)
-    await store.update { state in
-      var newState = state
-      newState.nextRollNumber = 2
-      return newState
+    await store.update {
+      $0.nextRollNumber = 2
     }
     XCTAssertEqual(store.state.nextRollNumber, 2)
     XCTAssert(store.state.students.isEmpty)
@@ -48,10 +46,8 @@ final class StateStoreTest: XCTestCase {
   func testUpdateStudents() async throws {
     XCTAssertEqual(store.state.nextRollNumber, 1)
     XCTAssert(store.state.students.isEmpty)
-    await store.update { state in
-      var newState = state
-      newState.students = [1: "Jenny Dear"]
-      return newState
+    await store.update {
+      $0.students = [1: "Jenny Dear"]
     }
     XCTAssertEqual(store.state.nextRollNumber, 1)
     XCTAssertEqual(store.state.students[1], "Jenny Dear")
@@ -61,12 +57,42 @@ final class StateStoreTest: XCTestCase {
   func testAddNewStudent() async throws {
     XCTAssertEqual(store.state.nextRollNumber, 1)
     XCTAssert(store.state.students.isEmpty)
-    await store.update { state in
-      var newState = state
-      newState.nextRollNumber = 2
-      newState.students = [1: "Jenny Dear"]
-      return newState
+    await store.update {
+      $0.nextRollNumber = 2
+      $0.students = [1: "Jenny Dear"]
     }
+    XCTAssertEqual(store.state.nextRollNumber, 2)
+    XCTAssertEqual(store.state.students[1], "Jenny Dear")
+  }
+
+  @MainActor
+  func testAddNewStudentInTwoUpdates() async throws {
+    XCTAssertEqual(store.state.nextRollNumber, 1)
+    XCTAssert(store.state.students.isEmpty)
+    let expectation1 = XCTestExpectation(description: "Updated rollNumber")
+    let expectation2 = XCTestExpectation(description: "Updated student")
+
+    Task {
+      Task {
+        await store.update {
+          $0.nextRollNumber = 2
+          sleep(3)
+        }
+        expectation1.fulfill()
+      }
+      Task {
+        XCTAssertEqual(store.state.nextRollNumber, 1)
+      }
+      Task {
+        await store.update {
+          $0.students = [1: "Jenny Dear"]
+          sleep(1)
+        }
+        expectation2.fulfill()
+      }
+    }
+
+    await fulfillment(of: [expectation1, expectation2], timeout: 5)
     XCTAssertEqual(store.state.nextRollNumber, 2)
     XCTAssertEqual(store.state.students[1], "Jenny Dear")
   }

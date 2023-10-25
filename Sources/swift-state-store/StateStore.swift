@@ -38,8 +38,8 @@ public actor StateStore<State: StateProtocol>: ObservableObject {
       do {
         let serializedData = try Data(contentsOf: storeURL)
         let persistedState = try State(from: serializedData)
-        await update { _ in
-          return persistedState
+        await update {
+          $0 = persistedState
         }
       } catch let error {
         Logger().error("Could not load value from file \(error)")
@@ -47,13 +47,13 @@ public actor StateStore<State: StateProtocol>: ObservableObject {
     }
   }
 
-  /// Update the underlying state to |state|.
+  /// Update/mutate the underlying state to |state|.
   ///
   /// - Note: Updates are done on the MainActor.
-  public func update(action: (State) -> State) async {
+  public func update(mutate: (inout State) -> Void) async {
     await MainActor.run {
       Logger().info("Mutating old state: \(state)")
-      state = action(state)
+      mutate(&state)
       Logger().info("New state: \(state)")
     }
     await MainActor.run {
