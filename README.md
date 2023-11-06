@@ -9,7 +9,7 @@ import StateStore
 
 struct MyApp: App {
   @StateObject private var store = StateStore<AppState>(
-    storeURL: URL.documentsDirectory.appendingPathComponent("state.binpb")
+    storeURL: URL.documentsDirectory.appendingPathComponent("state.binpb"))
 
   var body: some Scene {
     WindowGroup {
